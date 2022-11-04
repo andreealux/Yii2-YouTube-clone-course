@@ -1,5 +1,10 @@
 <?php
 /** @var $model \common\models\Video */
+
+use yii\helpers\Html;
+use yii\helpers\Url;
+use yii\widgets\Pjax;
+
 ?>
 <div class="row mt-3">
     <div class="col-sm-8">
@@ -11,17 +16,24 @@
         <h6 class="mt-2"><?php echo $model->title ?></h6>
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                123 views . <?php echo Yii::$app->formatter->asDate($model->created_at) ?>
+                <?php echo $model->getViews()->count() ?> views . <?php echo Yii::$app->formatter->asDate($model->created_at) ?>
             </div>
             <div>
-                <button class="btn btn-outline-primary">
-                    <i class="fa-regular fa-thumbs-up"></i>
-                </button>
-                <button class="btn btn-outline-primary">
-                    <i class="fa-regular fa-thumbs-down"></i>
-                </button>
+                <?php Pjax::begin() ?>
+                    <?php echo $this->render('_buttons', [
+                        'model' => $model
+                ]) ?>
+                <?php Pjax::end() ?>
             </div>
         </div>
+    </div>
+    <div>
+        <p>
+            <?php echo Html::a($model->createdBy->username, [
+                    '/channel/view', 'username' => $model->createdBy->username
+            ]) ?>
+        </p>
+        <?php echo Html::encode($model->description) ?>
     </div>
     <div class="col-sm-4">
 
