@@ -64,7 +64,7 @@ class User extends ActiveRecord implements IdentityInterface
      * @throws \yii\base\InvalidConfigException
      */
     public function getSubscribers(){
-        return $this->hasMany(User::class, ['id', 'user_id'])
+        return $this->hasMany(User::class, ['id' => 'user_id'])
             ->viaTable('subscriber', ['channel_id' => 'id']);
     }
 

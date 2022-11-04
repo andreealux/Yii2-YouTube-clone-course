@@ -9,4 +9,4 @@ use yii\helpers\Url;
    href="<?php echo Url::to(['channel/subscribe', 'username' => $channel->username]) ?>" role="button"
    data-method="post" data-pjax="1">
     Subscribe <i class="fa-regular fa-bell"></i>
-</a><?php echo $channel->getSubscribers()->count() ?>
+</a> <?php echo $channel->getSubscribers()->count() ?>
