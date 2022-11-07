@@ -18,8 +18,8 @@ class VideoController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::class,
-                'only' => ['like', 'dislike'],
-                'rules'=>[
+                'only' => ['like', 'dislike', 'history'],
+                'rules' => [
                     [
                         'allow' => true,
                         'roles' => ['@']
@@ -36,20 +36,25 @@ class VideoController extends Controller
         ];
     }
 
-    public function actionIndex(){
+    public function actionIndex()
+    {
 
         $dataProvider = new ActiveDataProvider([
-            'query' => Video::find()->published()->latest()
+            'query' => Video::find()->published()->latest(),
+            'pagination' => [
+                'pageSize' => 5
+            ]
         ]);
         return $this->render('index', [
             'dataProvider' => $dataProvider
         ]);
     }
 
-    public function actionView($video_id){
+    public function actionView($video_id)
+    {
 
         $this->layout = 'auth';
-        $video = $this ->findVideo($video_id);
+        $video = $this->findVideo($video_id);
 
         $videoView = new VideoView();
         $videoView->video_id = $video_id;
@@ -57,12 +62,21 @@ class VideoController extends Controller
         $videoView->created_at = time();
         $videoView->save();
 
-        return $this->render('view',[
-            'model' => $video
+        $similarVideos = Video::find()
+            ->published()
+            ->byKeyword($video->title)
+            ->andWhere(['NOT', ['video_id' => $video_id]])
+            ->limit(10)
+            ->all();
+
+        return $this->render('view', [
+            'model' => $video,
+            'similarVideos' => $similarVideos
         ]);
     }
 
-    public function actionLike($video_id){
+    public function actionLike($video_id)
+    {
         $video = $this->findVideo($video_id);
         $userId = \Yii::$app->user->id;
 
@@ -70,15 +84,15 @@ class VideoController extends Controller
             ->userIdVideoId($userId, $video_id)
             ->one();
 
-        if(!$videoLikeDislike){
+        if (!$videoLikeDislike) {
 
             $this->saveLikeDislike($video_id, $userId, VideoLike::TYPE_LIKE);
 
-        }else if($videoLikeDislike->type == VideoLike::TYPE_LIKE){
+        } else if ($videoLikeDislike->type == VideoLike::TYPE_LIKE) {
 
             $videoLikeDislike->delete();
 
-        }else{
+        } else {
 
             $videoLikeDislike->delete();
             $this->saveLikeDislike($video_id, $userId, VideoLike::TYPE_LIKE);
@@ -89,7 +103,8 @@ class VideoController extends Controller
         ]);
     }
 
-    public function actionDislike($video_id){
+    public function actionDislike($video_id)
+    {
         $video = $this->findVideo($video_id);
         $userId = \Yii::$app->user->id;
 
@@ -97,15 +112,15 @@ class VideoController extends Controller
             ->userIdVideoId($userId, $video_id)
             ->one();
 
-        if(!$videoLikeDislike){
+        if (!$videoLikeDislike) {
 
             $this->saveLikeDislike($video_id, $userId, VideoLike::TYPE_DISLIKE);
 
-        }else if($videoLikeDislike->type == VideoLike::TYPE_DISLIKE){
+        } else if ($videoLikeDislike->type == VideoLike::TYPE_DISLIKE) {
 
             $videoLikeDislike->delete();
 
-        }else{
+        } else {
 
             $videoLikeDislike->delete();
             $this->saveLikeDislike($video_id, $userId, VideoLike::TYPE_DISLIKE);
@@ -116,18 +131,57 @@ class VideoController extends Controller
         ]);
     }
 
-    protected function findVideo($video_id){
+    protected function findVideo($video_id)
+    {
         $video = Video::findOne($video_id);
-        if(!$video){
+        if (!$video) {
             throw new NotFoundHttpException("Video does not exist");
         }
         return $video;
     }
 
-    protected function saveLikeDislike($video_id, $userId, $type){
+    public function actionSearch($keyword)
+    {
+        $query = Video::find()
+            ->published()
+            ->latest();
+
+        if ($keyword) {
+            $query->byKeyword($keyword);
+        }
+
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query
+        ]);
+
+        return $this->render('search', [
+            'dataProvider' => $dataProvider
+        ]);
+    }
+
+    public function actionHistory()
+    {
+        $query = Video::find()
+            ->alias('v')
+            ->innerJoin("(SELECT video_id, MAX(created_at) as max_date FROM video_view WHERE user_id = :userId GROUP BY video_id) vv",
+                'vv.video_id = v.video_id', ['userId' => \Yii::$app->user->id])
+            ->orderBy("vv.max_date DESC");
+
+
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query
+        ]);
+
+        return $this->render('history', [
+            'dataProvider' => $dataProvider
+        ]);
+    }
+
+    protected function saveLikeDislike($video_id, $userId, $type)
+    {
         $videoLikeDislike = new VideoLike();
         $videoLikeDislike->video_id = $video_id;
-        $videoLikeDislike->user_id =$userId;
+        $videoLikeDislike->user_id = $userId;
         $videoLikeDislike->type = $type;
         $videoLikeDislike->created_at = time();
         $videoLikeDislike->save();

@@ -3,6 +3,8 @@
 use yii\bootstrap5\Html;
 use yii\bootstrap5\Nav;
 use yii\bootstrap5\NavBar;
+use yii\helpers\Url;
+
 ?>
 
 <header>
@@ -20,6 +22,16 @@ use yii\bootstrap5\NavBar;
         $menuItems[] = ['label' => 'Signup', 'url' => ['/site/signup']];
         $menuItems[] = ['label' => 'Login', 'url' => ['/site/login']];
     }
+    ?>
+
+        <form action="<?php echo Url::to(['/video/search']) ?>" class="form-inline my-2 my-lg-0" style="display: flex">
+            <input class="form-control mr-sm-2" type="search" placeholder="Search"
+                   name="keyword"
+                   value="<?php echo Yii::$app->request->get('keyword') ?>" >
+            <button class="btn btn-outline-success my-2 my-sm-0" style="margin-left: 10px !important;">Search</button>
+        </form>
+
+    <?php
     echo Nav::widget([
         'options' => ['class' => 'navbar-nav me-auto mb-2 mb-md-0'],
     ]);
